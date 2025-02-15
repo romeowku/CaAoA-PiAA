@@ -1,3 +1,6 @@
+// for launch use this command:
+// g++ -o a main.cpp -lsfml-graphics -lsfml-window -lsfml-system && ./a
+
 #include <iostream>
 #include <vector>
 #include <stack>
