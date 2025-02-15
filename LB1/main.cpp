@@ -8,15 +8,16 @@
 #include <SFML/Graphics.hpp>
 #include <cstdlib>
 #include <ctime>
+#include "timer.hpp"
 
 using namespace std;
 
 //****************************************************************************************************
 // функция для поиска пустой клетки на поле
-pair<int, int> checkEmptyPlace(const vector<vector<int>>& matrix);
+pair<int, int> checkEmptyPlace(const vector<vector<int>>& matrix, int& operations);
 
 // функция для нахождения максимального размера квадрата, который можно разместить в клетке (x, y)
-int maxSquareSize(const vector<vector<int>>& matrix, int x, int y);
+int maxSquareSize(const vector<vector<int>>& matrix, int x, int y, int& operations);
 
 // функция для проверки, является ли число простым
 bool isPrime(int a);
@@ -90,6 +91,8 @@ void startAlgorithm(int n)
 
     // получаем начальное разбиение (квадраты)
     vector<tuple<int, int, int>> initial_part = getInitialSquare(n);
+    int operations = 0;
+
     // размещаем квадраты на поле
     for (auto& [x, y, size] : initial_part) 
     {
@@ -98,6 +101,7 @@ void startAlgorithm(int n)
             for (int j = 0; j < size; j++) 
             {
                 matrix_zero[y + i][x + j] = size;  // заполняем клетки значением размера квадрата
+                operations++;
             }
         }
     }
@@ -114,7 +118,9 @@ void startAlgorithm(int n)
         if (state.count >= min_squares) { continue; }
 
         // находим пустое место на поле
-        auto [y, x] = checkEmptyPlace(state.matrix);
+        int operations_in_this_iteration = 0;
+        auto [y, x] = checkEmptyPlace(state.matrix, operations_in_this_iteration);
+        operations += operations_in_this_iteration;
         if (y == -1 && x == -1) 
         {
             // если нет пустых мест, обновляем минимальное количество квадратов, если нужно
@@ -127,7 +133,8 @@ void startAlgorithm(int n)
         }
 
         // находим максимальный размер квадрата для текущего места
-        int max_size = maxSquareSize(state.matrix, x, y);
+        int max_size = maxSquareSize(state.matrix, x, y, operations_in_this_iteration);
+        operations += operations_in_this_iteration;
         
         // пробуем разместить квадраты разных размеров
         for (int size = 1; size <= max_size; size++) 
@@ -136,7 +143,11 @@ void startAlgorithm(int n)
             // заполняем клетки новым квадратом
             for (int i = 0; i < size; i++) 
             {
-                for (int j = 0; j < size; j++) { new_matrix[y + i][x + j] = size; }
+                for (int j = 0; j < size; j++) 
+                { 
+                    new_matrix[y + i][x + j] = size; 
+                    operations++;
+                }
             }
 
             // добавляем квадрат в список и пушим новое состояние в стек
@@ -145,6 +156,7 @@ void startAlgorithm(int n)
             s.push({new_matrix, state.count + 1, new_squares});
         }
     }
+    cout << "Общее количество операций: " << operations << endl;
 }
 
 void visualize() 
@@ -183,7 +195,12 @@ void visualize()
 int main() 
 {
     cin >> n;
+    Timer timer;
+
     startAlgorithm(n);
+
+    timer.stop();
+
     printResult();
     visualize();
     return 0;
@@ -191,13 +208,14 @@ int main()
 
 //**********************************__ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ__***************************************
 
-int maxSquareSize(const vector<vector<int>>& matrix, int x, int y) 
+int maxSquareSize(const vector<vector<int>>& matrix, int x, int y, int& operations) 
 {
     int size = 1;  // начинаем с размера квадрата 1x1
     while (x + size < n && y + size < n && matrix[y][x + size] == 0 && matrix[y + size][x] == 0) 
     {
         // увеличиваем размер квадрата, пока он помещается в поле и не наталкивается на занятые клетки
         size++;
+        operations++;
     }
     return size;  // возвращаем максимальный размер квадрата
 }
@@ -221,12 +239,13 @@ bool isPrime(int a)
     return true;  // число простое
 }
 
-pair<int, int> checkEmptyPlace(const vector<vector<int>>& matrix) 
+pair<int, int> checkEmptyPlace(const vector<vector<int>>& matrix, int& operations) 
 {
     for (int y = 0; y < n; y++) 
     {
         for (int x = 0; x < n; x++) 
         {
+            operations++;
             if (matrix[y][x] == 0) { return {y, x}; } // если клетка пустая, возвращаем ее координаты
         }
     }
